@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<!-- Page Heading -->
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+  <h1 class="h3 mb-0 text-gray-800">Match Map</h1>
+    <div >
+      <button href="#" data-toggle="modal" data-target="#add_MATCHMAP_Modal" class="btn btn-sm btn-primary shadow-sm"><i class="fas fa-plus fa-sm text-white-50"></i> Add MATCHMAP</button>
+      <button href="#" class="btn btn-sm btn-primary shadow-sm" onclick="refresh_datatable()"><i class="fas fa-undo fa-sm text-white-50"></i> Refresh</button>
+      <button href="#" class="btn btn-sm btn-danger shadow-sm" onclick="confirm_remove_all()"><i class="fas fa-bomb fa-sm text-white-50"></i> REMOVE ALL</button>
+      <!-- <button href="#" class="btn btn-sm btn-danger shadow-sm" onclick="trigger_remove_modal(1)"><i class="fas fa-trash-bin fa-sm text-white-50"></i> REMOVE TEST</button> -->
+  </div>
+</div>
+
+
+<!-- Alert Box -->
+<div id="alert_box" class="my-2 p-2">
+</div>
+
+<!-- DataTales Example -->
+<div class="card shadow mb-4">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered" id="dataTable" cellspacing="0">
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Match Modal-->
+<div class="modal fade" id="add_MATCHMAP_Modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Add Matchmap</h5>
+        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form role="form">
+
+          <div class="form-group">
+            <label class="font-weight-bold">Description</label>
+            <input id="add_desc" class="form-control text-xs" placeholder="MANDATORY - Add button disabled if void [type: string]" onchange="update_description()">
+            <div class="text-xs text-gray-500 mt-1">Short description for the matchmap</div>
+          </div>
+
+          <div class="form-group d-flex">
+            <label class="col-4 mt-1 p-0 font-weight-bold text-left pr-4">
+              <span>Priority</span>
+            </label>
+            <div class="row col-8">
+              <input class="form-control col-12 text-xs" id="add_priority" placeholder="default: 1 [type: int]">
+              <div class="text-xs text-gray-500 col-12 pl-0 mt-1">Priority for the new match [1, #matches]</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold">Forwarding</label>
+            <div class="px-2">
+              
+              <div class="form-group row mb-2">
+                <label class="col-4 my-auto p-0 font-italic text-right pr-2 small">
+                  <span>IP Protocol Number</span>
+                </label>
+                <div class="col-8 pr-0 pl-0" id="add_ip_proto_select_wrapper">
+                  <select class="form-control text-xs" id="add_ip_proto_select" onchange="update_selected_pn('ADD')"></select>
+                </div>
+                <div class="d-none col-4 pl-1 pr-0" id="add_ip_proto_num_wrapper">
+                  <input class="form-control col-12 text-xs" id="add_ip_proto_num" placeholder="0">
+                </div>
+                <div class="col-4"></div>
+                <div class="text-xs text-gray-500 pl-0 mt-1 col-8">IANA IP protocol number [type: integer]</div>
+              </div>
+              
+              <div class="form-group row mb-2">
+                <label class="col-4 my-auto font-italic text-right pr-4 small">
+                  <span>Destination IP</span>
+                </label>
+                <input class="form-control col-8 text-xs" id="add_dst_ip" placeholder="default: null [type: string]">
+                <div class="col-4"></div>
+                <div class="text-xs text-gray-500 pl-0 mt-1 col-8">Destination Address or IP Address [X.X.X.X or url]</div>
+              </div>
+              
+              <div class="form-group row mb-2" id="add_dst_port_wrapper">
+                <label class="col-4 my-auto font-italic text-right pr-4 small">
+                  <span>Destination Port</span>
+                </label>
+                <input class="form-control col-8 text-xs" id="add_dst_port" placeholder="default: 0 [type: integer]">
+                <div class="col-4"></div>
+                <div class="text-xs text-gray-500 pl-0 mt-1 col-8">Destination Port (available for certain protocols only)</div>
+              </div>
+              
+              <div class="row d-flex">
+                <label class="col-4 my-auto font-italic text-right pr-4 small">
+                  <span>Netmask</span>
+                </label>
+                <div class="input-group col-8 p-0">
+                  <div class="input-group-prepend">
+                    <div class="input-group-text text-xs">/</div>
+                  </div>
+                  <input type="text" class="form-control text-xs" id="add_netmask" placeholder="default: 32 [type: integer]">
+                </div>
+                <div class="col-4"></div>
+                <div class="text-xs text-gray-500 pl-0 mt-1 col-8">Netmask [0 - 32]. Use "32" for a single destination host</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold">Rewriting</label class="font-weight-bold">
+            <div class="px-2">
+              
+              <div class="form-group row mb-2">
+                <label class="col-4 my-auto font-italic text-right pr-4 pl-0 small">
+                  <span>New Destination IP</span>
+                </label>
+                <input class="form-control col-8 text-xs" id="add_new_dst_ip" placeholder="default: null [type: string]">
+                <div class="col-4"></div>
+                <div class="text-xs text-gray-500 pl-0 mt-1 col-8">New Destination Address or IP Address [X.X.X.X or url]</div>
+              </div>
+              
+              <div class="form-group row mb-2" id="add_new_dst_port_wrapper">
+                <label class="col-4 my-auto font-italic text-right pr-4 pl-0 small">
+                  <span>New Destination Port</span>
+                </label>
+                <input class="form-control col-8 text-xs" id="add_new_dst_port" placeholder="default: 0 [type: integer]">
+                <div class="col-4"></div>
+                <div class="text-xs text-gray-500 pl-0 mt-1 col-8">New Destination Port (available for certain protocols only)</div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <!-- <div class="modal-body">
+        <form role="form">
+          <div class="form-group">
+            <label>Description</label>
+            <input id="add_desc" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>IP Protocol Number</label>
+            <input id="add_ip_proto_num" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>DST IP</label>
+            <input id="add_dst_ip" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>DST Port</label>
+            <input id="add_dst_port" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Netmask</label>
+            <input id="add_netmask" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>NEW DST IP</label>
+            <input id="add_new_dst_ip" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>NEW DST Port</label>
+            <input id="add_new_dst_port" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Priority</label>
+            <input id="add_priority" class="form-control">
+          </div>
+        </form>
+      </div> -->
+      <div class="modal-footer">
+        <button href="#" data-dismiss="modal" class="btn btn-sm btn-secondary shadow-sm"><i class="fas fa-sm text-white-50"></i>Cancel</button>
+        <button href="#" id="add_button" onclick="add()" data-toggle="modal" data-target="#add_MATCHMAP_Modal" class="btn btn-sm btn-primary shadow-sm"><i class="fas fa-sm text-white-50"></i>Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Remove Match Modal-->
+<div class="modal fade" id="remove_MATCHMAP_Modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Remove Match</h5>
+        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form role="form">
+          <div class="form-group" hidden>
+            <label>Priority</label>
+            <input id="remove_priority" class="form-control" disabled>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <input id="remove_desc" class="form-control" disabled>
+          </div>
+          <div class="form-group d-none">
+            <label>IP Protocol Number Select</label>
+            <select id="remove_ip_proto_select" class="form-control" disabled></select>
+          </div>
+          <div class="form-group">
+            <label>IP Protocol Number</label>
+            <input id="remove_ip_proto_num" class="form-control" disabled>
+          </div>
+          <div class="form-group">
+            <label>DST IP</label>
+            <input id="remove_dst_ip" class="form-control" disabled>
+          </div>
+          <div class="form-group">
+            <label>DST Port</label>
+            <input id="remove_dst_port" class="form-control" disabled>
+          </div>
+          <div class="form-group">
+            <label>Netmask</label>
+            <input id="remove_netmask" class="form-control" disabled>
+          </div>
+          <div class="form-group">
+            <label>NEW DST IP</label>
+            <input id="remove_new_dst_ip" class="form-control" disabled>
+          </div>
+          <div class="form-group">
+            <label>NEW DST Port</label>
+            <input id="remove_new_dst_port" class="form-control" disabled>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <a href="#" data-dismiss="modal" class="btn btn-sm btn-secondary shadow-sm"><i class="fas fa-sm text-white-50"></i>Cancel</a>
+        <a href="#" onclick="remove()" data-toggle="modal" data-target="#remove_MATCHMAP_Modal" class="btn btn-sm btn-primary shadow-sm"><i class="fas fa-sm text-white-50"></i>Remove</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Remove ALL Modal-->
+<div class="modal fade" id="confirm_REMOVE_ALL_Modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Remove ALL Match maps</h5>
+        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-center p-2">
+          <div>
+          <i class="fas fa-exclamation-triangle fa-3x text-danger mx-1"></i>
+          <i class="fas fa-exclamation-triangle fa-3x text-danger mx-1"></i> 
+          <i class="fas fa-exclamation-triangle fa-3x text-danger mx-1"></i>
+          </div>
+        </div>
+        <div class="row text-center"><span class="font-weight-bold text-danger h4"> Do you really want to DELETE ALL match maps?</span></div>
+      </div>
+      <div class="modal-footer">
+        <a href="#" data-dismiss="modal" class="btn btn-sm btn-secondary shadow-sm"><i class="fas fa-sm text-white-50"></i>Cancel</a>
+        <a href="#" onclick="remove_all()" data-toggle="modal" data-target="#confirm_REMOVE_ALL_Modal" class="btn btn-sm btn-danger shadow-sm"><i class="fas fa-bomb fa-sm text-white-50 mr-1"></i>Remove ALL</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% end %}
+
+{% block js %}
+<script src="/static/js/pages/lightedge-matchmap.js"></script>
+{% end %}
