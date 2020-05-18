@@ -17,11 +17,12 @@
 
 """UE Map handler."""
 
-import lightedge_runtime.managers.apimanager.apimanager as apimanager
+# import lightedge_runtime.managers.apimanager.apimanager as apimanager
+import empower_core.apimanager.apimanager as apimanager
 
 
 # pylint: disable=W0223
-class MatchMapHandler(apimanager.EmpowerAPIHandler):
+class MatchMapHandler(apimanager.APIHandler):
     """All the accounts defined in the controller."""
 
     URLS = [r"/upf/v1/matchmap/([-0-9.]*)",

@@ -17,11 +17,12 @@
 
 """UE Map handler."""
 
-import lightedge_runtime.managers.apimanager.apimanager as apimanager
+# import lightedge_runtime.managers.apimanager.apimanager as apimanager
+import empower_core.apimanager.apimanager as apimanager
 
 
 # pylint: disable=W0223
-class UPFClientHandler(apimanager.EmpowerAPIHandler):
+class UPFClientHandler(apimanager.APIHandler):
     """All the accounts defined in the controller."""
 
     URLS = [r"/upf/v1/client/?"]
