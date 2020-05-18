@@ -1,0 +1,11 @@
+.table > tbody > tr > td {
+    vertical-align: middle;
+}
+
+.table > thead > tr > th {
+    vertical-align: middle;
+}
+
+.text-sm {
+  font-size: .8rem;
+}
