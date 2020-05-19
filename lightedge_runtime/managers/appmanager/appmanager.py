@@ -93,7 +93,8 @@ class AppManager(EService):
                 raise ValueError("Charts must come from a repo (repo/chart)")
 
             namespace_dir = self.add_ns(ns)  # no effect if it already exists
-            app_dir = self.unpack_chart(repochart_name, app_name, namespace_dir)
+            app_dir = self.unpack_chart(repochart_name, app_name,
+                                        namespace_dir)
 
             self.write_values(app_name, namespace_dir, values)
 

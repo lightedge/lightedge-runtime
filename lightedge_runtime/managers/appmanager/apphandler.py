@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-"""UE Map handler."""
+"""App handler."""
 
 import empower_core.apimanager.apimanager as apimanager
 
@@ -61,7 +61,7 @@ class AppHandler(apimanager.APIHandler):
                 "status": {
                     "name": "app1",
                     "info": {
-                        "first_deployed": "2020-05-05T09:58:50.133770875+02:00",
+                        "first_deployed": "2020-05-05T09:58:50.133770875+0...",
                         "last_deployed": "2020-05-05T09:58:50.133770875+02:00",
                         "deleted": "",
                         "description": "Install complete",
@@ -198,7 +198,7 @@ class AppHandler(apimanager.APIHandler):
         """
 
         if "release_name" not in kwargs or "repochart_name" not in kwargs:
-            raise ValueError("release_name and repochart_name must be provided")
+            raise ValueError("release_name and repochart_name must be given")
 
         values = kwargs['values'] if 'values' in kwargs else {}
 
