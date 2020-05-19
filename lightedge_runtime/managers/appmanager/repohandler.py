@@ -24,12 +24,11 @@ import empower_core.apimanager.apimanager as apimanager
 class RepoHandler(apimanager.APIHandler):
     """All the accounts defined in the controller."""
 
-    URLS = [r"/api/v1/appmanager/repos",
-            r"/api/v1/appmanager/repos/([a-zA-Z0-9-]*)"]
+    URLS = [r"/api/v1/appmanager/repos"]
 
     @apimanager.validate(min_args=0, max_args=0)
-    def get(self, chart_name=None):
-        """List entries in the Match Map.
+    def get(self):
+        """List configured repos.
         Args:
         Example URLs:
             GET /api/v1/appmanager/repos
@@ -49,7 +48,7 @@ class RepoHandler(apimanager.APIHandler):
 
     @apimanager.validate(returncode=201, min_args=0, max_args=0)
     def post(self, **kwargs):
-        """Insert entry in the Match Map.
+        """Add a new repo.
         Args:
         Request:
             name: the name to be used for referencing to this repo
@@ -60,7 +59,6 @@ class RepoHandler(apimanager.APIHandler):
                 "name": "bitnami",
                 "url": "https://charts.bitnami.com/bitnami"
             }
-            ...
         """
 
         if "name" not in kwargs or "url" not in kwargs:
@@ -70,12 +68,17 @@ class RepoHandler(apimanager.APIHandler):
 
     @apimanager.validate(returncode=204, min_args=0, max_args=0)
     def put(self):
+        """Update cache for all repos.
+        Args:
+        Example URLs:
+            PUT /api/v1/appmanager/repos
+        """
 
         self.service.repo_update()
 
     @apimanager.validate(returncode=204, min_args=1, max_args=1)
     def delete(self, name):
-        """Delete entries in the Match Map.
+        """Delete a repo.
         Args:
             [0]: the repo name
         Example URLs:
