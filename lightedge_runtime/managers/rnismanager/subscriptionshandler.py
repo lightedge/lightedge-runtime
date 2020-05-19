@@ -30,7 +30,7 @@ class SubscriptionsHandler(apimanager.APIHandler):
             r"/rni/v1/subscriptions/([a-zA-Z0-9_]*)/([a-zA-Z0-9-]*)/?"]
 
     @apimanager.validate(min_args=1, max_args=2)
-    def get(self, *args, **kwargs):
+    def get(self, sub_type, sub_id=None):
         """Get the subscriptions
 
         Example URLs:
@@ -56,8 +56,7 @@ class SubscriptionsHandler(apimanager.APIHandler):
             }
         """
 
-        sub_type = args[0]
-        sub_id = uuid.UUID(args[1]) if len(args) > 1 else None
+        sub_id = uuid.UUID(sub_id) if sub_id else None
 
         return self.service.get_subscriptions_links(sub_type, sub_id)
 
@@ -101,7 +100,7 @@ class SubscriptionsHandler(apimanager.APIHandler):
                         (sub.SUB_TYPE, sub.service_id))
 
     @apimanager.validate(returncode=204, min_args=2, max_args=2)
-    def delete(self, *args, **kwargs):
+    def delete(self, sub_type, sub_id):
         """Delete a subscription.
 
         Args:
@@ -114,7 +113,6 @@ class SubscriptionsHandler(apimanager.APIHandler):
                 meas_rep_ue/52313ecb-9d00-4b7d-b873-b55d3d9ada26
         """
 
-        sub_type = args[0]
-        sub_id = uuid.UUID(args[1])
+        sub_id = uuid.UUID(sub_id)
 
         self.service.rem_subscription(sub_type=sub_type, sub_id=sub_id)
