@@ -19,7 +19,7 @@
 
 from empower_core.app import EVERY
 
-from lightedge_runtime.managers.rnismanager.subscription import Subscription
+from lightedge.managers.rnismanager.subscription import Subscription
 
 
 class MeasRepUe(Subscription):

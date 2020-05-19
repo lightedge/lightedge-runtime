@@ -18,9 +18,9 @@ import random
 
 from pprint import pformat
 
-from lightedge_runtime.managers.upfmanager.match import Match
+from lightedge.managers.upfmanager.match import Match
 
-from lightedge_runtime.managers.upfmanager.dictionarywrapper import *
+from lightedge.managers.upfmanager.dictionarywrapper import *
 
 MATCH_OP__ADD = 'add'
 MATCH_OP__DELETE = 'delete'

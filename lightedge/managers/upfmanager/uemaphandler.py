@@ -17,7 +17,7 @@
 
 """UE Map handler."""
 
-# import lightedge_runtime.managers.apimanager.apimanager as apimanager
+# import lightedge.managers.apimanager.apimanager as apimanager
 import empower_core.apimanager.apimanager as apimanager
 
 # pylint: disable=W0223

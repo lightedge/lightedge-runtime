@@ -20,15 +20,15 @@
 from empower_core.service import EService
 from empower_core.launcher import srv_or_die
 
-from lightedge_runtime.managers.rnismanager.subscription import Subscription
-from lightedge_runtime.managers.rnismanager.subscriptionshandler import \
+from lightedge.managers.rnismanager.subscription import Subscription
+from lightedge.managers.rnismanager.subscriptionshandler import \
     SubscriptionsHandler
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8888
 
 SUBSCRIPTIONS = {
-    "meas_rep_ue": "lightedge_runtime.workers.measrepue.measrepue"
+    "meas_rep_ue": "lightedge.workers.measrepue.measrepue"
 }
 
 

@@ -25,12 +25,10 @@ from jsonpath_ng import parse as jsonpath_parse
 
 from helmpythonclient.client import HelmPythonClient
 
-from lightedge_runtime.managers.appmanager.apphandler import AppHandler
-from lightedge_runtime.managers.appmanager.repohandler import RepoHandler
-from lightedge_runtime.managers.appmanager.chartfinderhandler \
-    import ChartFinderHandler
-from lightedge_runtime.managers.appmanager.chartinfohandler import \
-    ChartInfoHandler
+from lightedge.managers.appmanager.apphandler import AppHandler
+from lightedge.managers.appmanager.repohandler import RepoHandler
+from lightedge.managers.appmanager.chartfinderhandler import ChartFinderHandler
+from lightedge.managers.appmanager.chartinfohandler import ChartInfoHandler
 
 from empower_core.service import EService
 from empower_core.launcher import srv

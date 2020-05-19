@@ -11,16 +11,16 @@ import copy
 from threading import Lock
 from threading import Timer
 
-from lightedge_runtime.managers.upfmanager.match import Match
+from lightedge.managers.upfmanager.match import Match
 
-from lightedge_runtime.managers.upfmanager.matchmaphandler import MatchMapHandler
-from lightedge_runtime.managers.upfmanager.uemaphandler import UEMapHandler
-from lightedge_runtime.managers.upfmanager.upfclienthandler import UPFClientHandler
+from lightedge.managers.upfmanager.matchmaphandler import MatchMapHandler
+from lightedge.managers.upfmanager.uemaphandler import UEMapHandler
+from lightedge.managers.upfmanager.upfclienthandler import UPFClientHandler
 
-from lightedge_runtime.managers.upfmanager.dictionarywrapper import *
+from lightedge.managers.upfmanager.dictionarywrapper import *
 
 from pymodm.errors import ValidationError
-from lightedge_runtime.managers.upfmanager.upfservicecontrollerwshandler import UPFServiceControllerWSHandler
+from lightedge.managers.upfmanager.upfservicecontrollerwshandler import UPFServiceControllerWSHandler
 
 from pprint import pformat
 
