@@ -22,7 +22,7 @@ import empower_core.apimanager.apimanager as apimanager
 
 # pylint: disable=W0223
 class ChartInfoHandler(apimanager.APIHandler):
-    """All the accounts defined in the controller."""
+    """Get chart info."""
 
     URLS = [r"/api/v1/appmanager/chartinfo/([a-zA-Z0-9-]*)/([a-zA-Z0-9-]*)"]
 
