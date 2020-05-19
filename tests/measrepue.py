@@ -52,15 +52,17 @@ class TestMeasRepUe(BaseTest):
         }
 
         loc = "/rni/v1/subscriptions/meas_rep_ue/" \
-            "f48d7f17-5411-4d01-b99e-01bbc3ef4906"
+            "f48d7f17-5411-4d01-b99e-01bbc3ef49A3"
 
         self.post(("root", "root", loc), data, 201)
 
         self.get(("root", "root", loc), 200)
 
-        #self.delete(("root", "root", loc), 204)
+        self.post(("root", "root", loc), data, 400)
 
-        #self.get(("root", "root", loc), 404)
+        self.delete(("root", "root", loc), 204)
+
+        self.get(("root", "root", loc), 404)
 
 
 if __name__ == '__main__':

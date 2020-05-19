@@ -18,13 +18,18 @@
 """RNIS Manager."""
 
 from empower_core.service import EService
+from empower_core.launcher import srv_or_die
 
-from lightedge_runtime.managers.rnismanager.measrepue import MeasRepUe
-from lightedge_runtime.managers.rnismanager.measrepuehandler import \
-    MeasRepUeHandler
+from lightedge_runtime.managers.rnismanager.subscription import Subscription
+from lightedge_runtime.managers.rnismanager.subscriptionshandler import \
+    SubscriptionsHandler
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8888
+
+SUBSCRIPTIONS = {
+    "meas_rep_ue": "lightedge_runtime.workers.measrepue.measrepue"
+}
 
 
 class RNISManager(EService):
@@ -35,41 +40,91 @@ class RNISManager(EService):
         ctrl_host: sd-ran controller port (optional, default: 8888)
     """
 
-    HANDLERS = [MeasRepUeHandler]
+    HANDLERS = [SubscriptionsHandler]
 
     def __init__(self, context, service_id, ctrl_host, ctrl_port):
 
         super().__init__(context=context, service_id=service_id,
                          ctrl_host=ctrl_host, ctrl_port=ctrl_port)
 
-        self.meas_rep_ue_subscriptions = {}
+    @property
+    def subscriptions(self):
+        """Return ctrl_host."""
 
-    def add_meas_rep_ue(self, subscription_id, **kwargs):
-        """Add a new meas_rep_ue subscription."""
+        subscriptions = {}
 
-        if subscription_id in self.meas_rep_ue_subscriptions:
-            raise ValueError("Subscription %s already defined" %
-                             subscription_id)
+        for sub_type in SUBSCRIPTIONS:
+            subscriptions[sub_type] = {}
 
-        self.meas_rep_ue_subscriptions[subscription_id] = \
-            MeasRepUe(subscription_id=subscription_id, **kwargs)
+        for service in srv_or_die("envmanager").env.services.values():
 
-        return self.meas_rep_ue_subscriptions[subscription_id]
+            if not isinstance(service, Subscription):
+                continue
 
-    def rem_meas_rep_ue(self, subscription_id):
-        """Add a new meas_rep_ue subscription."""
+            subscriptions[service.SUB_TYPE][service.service_id] = service
 
-        if subscription_id not in self.meas_rep_ue_subscriptions:
-            raise KeyError("Subscription %s not registered" %
-                           subscription_id)
+        return subscriptions
 
-        del self.meas_rep_ue_subscriptions[subscription_id]
+    def get_subscriptions_links(self, sub_type, sub_id=None):
+        """Return subscriptions."""
 
-    def rem_all_meas_rep_ue(self):
-        """Remove all devices."""
+        out = {
+            "SubscriptionLinkList": {
+                "_links": {
+                    "self": "/rni/v1/subscriptions/%s" % sub_type,
+                    "subscription": []
+                }
+            }
+        }
 
-        for subscription_id in list(self.meas_rep_ue_subscriptions):
-            self.rem_meas_rep_ue(subscription_id)
+        if sub_id:
+
+            to_add = {
+                "href": self.subscriptions[sub_type][sub_id].href,
+                "subscriptionType": sub_type
+            }
+
+            out["SubscriptionLinkList"]["_links"]["subscription"] \
+                .append(to_add)
+
+        else:
+
+            for subscription in self.subscriptions[sub_type].values():
+
+                to_add = {
+                    "href": subscription.href,
+                    "subscriptionType": subscription.SUB_TYPE
+                }
+
+                out["SubscriptionLinkList"]["_links"]["subscription"] \
+                    .append(to_add)
+
+        return out
+
+    def add_subscription(self, sub_id, sub_type, **kwargs):
+        """Add a new subscription."""
+
+        if sub_type not in self.subscriptions:
+            raise ValueError("Invalid subscription type: %s" % sub_type)
+
+        name = SUBSCRIPTIONS[sub_type]
+        params = {
+            "subscription": kwargs
+        }
+
+        env = srv_or_die("envmanager").env
+        sub = env.register_service(name=name,
+                                   params=params,
+                                   service_id=sub_id)
+
+        return sub
+
+    def rem_subscription(self, sub_type, sub_id):
+        """Remove subscription."""
+
+        service_id = self.subscriptions[sub_type][sub_id].service_id
+
+        srv_or_die("envmanager").env.unregister_service(service_id=service_id)
 
     @property
     def ctrl_host(self):

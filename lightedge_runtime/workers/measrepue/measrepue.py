@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2019 Roberto Riggio
+# Copyright (c) 2020 Roberto Riggio
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,4 +15,22 @@
 # specific language governing permissions and limitations
 # under the License.
 
-"""System managers."""
+"""Measurement Report UE Subscription."""
+
+from empower_core.app import EVERY
+
+from lightedge_runtime.managers.rnismanager.subscription import Subscription
+
+
+class MeasRepUe(Subscription):
+    """Meas Rep UE."""
+
+    SUB_TYPE = "meas_rep_ue"
+    SUB_CONFIG = "MeasRepUeSubscription"
+
+
+def launch(context, service_id, subscription, every=EVERY):
+    """ Initialize the module. """
+
+    return MeasRepUe(context=context, service_id=service_id, every=every,
+                     subscription=subscription)

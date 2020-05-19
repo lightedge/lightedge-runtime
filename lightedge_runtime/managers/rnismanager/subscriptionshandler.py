@@ -23,15 +23,15 @@ import empower_core.apimanager.apimanager as apimanager
 
 
 # pylint: disable=W0223
-class MeasRepUeHandler(apimanager.APIHandler):
-    """Access the workers catalog."""
+class SubscriptionsHandler(apimanager.APIHandler):
+    """Access the RNI subscriptions."""
 
-    URLS = [r"/rni/v1/subscriptions/meas_rep_ue/?",
-            r"/rni/v1/subscriptions/meas_rep_ue/([a-zA-Z0-9-]*)/?"]
+    URLS = [r"/rni/v1/subscriptions/([a-zA-Z0-9_]*)/?",
+            r"/rni/v1/subscriptions/([a-zA-Z0-9_]*)/([a-zA-Z0-9-]*)/?"]
 
-    @apimanager.validate(min_args=0, max_args=1)
+    @apimanager.validate(min_args=1, max_args=2)
     def get(self, *args, **kwargs):
-        """Get meas_rep_ue subscriptions
+        """Get the subscriptions
 
         Example URLs:
 
@@ -56,48 +56,12 @@ class MeasRepUeHandler(apimanager.APIHandler):
             }
         """
 
-        subscriptions = []
+        sub_type = args[0]
+        sub_id = uuid.UUID(args[1]) if len(args) > 1 else None
 
-        if args:
+        return self.service.get_subscriptions_links(sub_type, sub_id)
 
-            sub = self.service.meas_rep_ue_subscriptions[uuid.UUID(args[0])]
-
-            href = "%s/notifications/meas_rep_ue/%s" % \
-                (sub.callback_reference, sub.subscription_id)
-
-            to_add = {
-                "href": href,
-                "subscriptionType": "MEAS_REPORT_UE"
-            }
-
-            subscriptions.append(to_add)
-
-        else:
-
-            for sub in self.service.meas_rep_ue_subscriptions.values():
-
-                href = "%s/notifications/meas_rep_ue/%s" % \
-                    (sub.callback_reference, sub.subscription_id)
-
-                to_add = {
-                    "href": href,
-                    "subscriptionType": "MEAS_REPORT_UE"
-                }
-
-                subscriptions.append(to_add)
-
-        out = {
-            "SubscriptionLinkList": {
-                "_links": {
-                    "self": "/rni/v1/subscriptions/meas_rep_ue",
-                    "subscription": subscriptions
-                }
-            }
-        }
-
-        return out
-
-    @apimanager.validate(returncode=201, min_args=0, max_args=1)
+    @apimanager.validate(returncode=201, min_args=1, max_args=2)
     def post(self, *args, **kwargs):
         """Create a new subscription.
 
@@ -127,17 +91,16 @@ class MeasRepUeHandler(apimanager.APIHandler):
         }
         """
 
-        subscription_id = uuid.UUID(args[0]) if args else uuid.uuid4()
+        sub_type = args[0]
+        sub_id = uuid.UUID(args[1]) if len(args) > 1 else uuid.uuid4()
 
-        subscription = \
-            self.service.add_meas_rep_ue(subscription_id=subscription_id,
-                                         **kwargs['MeasRepUeSubscription'])
+        sub = self.service.add_subscription(sub_type=sub_type, sub_id=sub_id,
+                                            **kwargs)
 
-        self.set_header("Location",
-                        "/rni/v1/subscriptions/meas_rep_ue/%s" %
-                        subscription.subscription_id)
+        self.set_header("Location", "/rni/v1/subscriptions/%s/%s" %
+                        (sub.SUB_TYPE, sub.service_id))
 
-    @apimanager.validate(returncode=204, min_args=0, max_args=1)
+    @apimanager.validate(returncode=204, min_args=2, max_args=2)
     def delete(self, *args, **kwargs):
         """Delete a subscription.
 
@@ -147,12 +110,11 @@ class MeasRepUeHandler(apimanager.APIHandler):
 
         Example URLs:
 
-            DELETE /rni/v1/subscriptions/meas_rep_ue
             DELETE /rni/v1/subscriptions/
-                meas_rep_ue52313ecb-9d00-4b7d-b873-b55d3d9ada26
+                meas_rep_ue/52313ecb-9d00-4b7d-b873-b55d3d9ada26
         """
 
-        if args:
-            self.service.rem_meas_rep_ue(uuid.UUID(args[0]))
-        else:
-            self.service.rem_all_meas_rep_ue()
+        sub_type = args[0]
+        sub_id = uuid.UUID(args[1])
+
+        self.service.rem_subscription(sub_type=sub_type, sub_id=sub_id)
