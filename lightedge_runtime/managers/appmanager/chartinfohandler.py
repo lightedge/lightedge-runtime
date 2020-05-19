@@ -30,7 +30,8 @@ class ChartInfoHandler(apimanager.APIHandler):
     def get(self, repo, chart_name):
         """Submit a search query.
         Args:
-            search: the query string
+            repo: the repo name
+            chart_name: the chart name
         Example URLs:
             GET /api/v1/appmanager/chartfinder?search='nginx'
             [

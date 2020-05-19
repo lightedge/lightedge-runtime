@@ -66,7 +66,6 @@ class RepoHandler(apimanager.APIHandler):
         if "name" not in kwargs or "url" not in kwargs:
             raise ValueError("name and url must be provided")
 
-        #self.service.repo_add(kwargs["name"], kwargs["url"], **kwargs)
         self.service.repo_add(**kwargs)
 
     @apimanager.validate(returncode=204, min_args=0, max_args=0)

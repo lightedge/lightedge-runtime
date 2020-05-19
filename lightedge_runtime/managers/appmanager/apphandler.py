@@ -206,8 +206,9 @@ class AppHandler(apimanager.APIHandler):
         if "service_endpoints" in kwargs:
             service_endpoints = kwargs["service_endpoints"]
 
-        data = self.service.create_app(kwargs["release_name"], kwargs["repochart_name"],
-                                         namespace, values, service_endpoints)
+        data = self.service.create_app(kwargs["release_name"],
+                                       kwargs["repochart_name"], namespace,
+                                       values, service_endpoints)
         return data
 
     @apimanager.validate(returncode=204, min_args=2, max_args=2)
