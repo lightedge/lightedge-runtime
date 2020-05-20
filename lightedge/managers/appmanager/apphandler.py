@@ -173,9 +173,9 @@ class AppHandler(apimanager.APIHandler):
 
         if app_name:
             return self.service.get_app(app_name, namespace)
-        else:
-            data, _ = self.service.list_apps(namespace)
-            return data
+
+        data, _ = self.service.list_apps(namespace)
+        return data
 
     @apimanager.validate(returncode=201, min_args=1, max_args=1)
     def post(self, namespace, **kwargs):
@@ -200,15 +200,13 @@ class AppHandler(apimanager.APIHandler):
         if "release_name" not in kwargs or "repochart_name" not in kwargs:
             raise ValueError("release_name and repochart_name must be given")
 
-        values = kwargs['values'] if 'values' in kwargs else {}
+        values = kwargs.get('values', {})
+        service_endpoints = kwargs.get("service_endpoints", [])
 
-        service_endpoints = []
-        if "service_endpoints" in kwargs:
-            service_endpoints = kwargs["service_endpoints"]
-
+        extra_args = {"service_endpoints": service_endpoints}
         data = self.service.create_app(kwargs["release_name"],
                                        kwargs["repochart_name"], namespace,
-                                       values, service_endpoints)
+                                       values, **extra_args)
         return data
 
     @apimanager.validate(returncode=204, min_args=2, max_args=2)

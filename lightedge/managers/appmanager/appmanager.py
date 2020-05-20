@@ -19,19 +19,19 @@
 
 from pathlib import Path
 import json
-import yaml
 import shutil
+import yaml
 from jsonpath_ng import parse as jsonpath_parse
 
 from helmpythonclient.client import HelmPythonClient
+
+from empower_core.service import EService
+from empower_core.launcher import srv
 
 from lightedge.managers.appmanager.apphandler import AppHandler
 from lightedge.managers.appmanager.repohandler import RepoHandler
 from lightedge.managers.appmanager.chartfinderhandler import ChartFinderHandler
 from lightedge.managers.appmanager.chartinfohandler import ChartInfoHandler
-
-from empower_core.service import EService
-from empower_core.launcher import srv
 
 DEFAULT_HELM = "helm"
 DEFAULT_KUBECONFIG = ""
@@ -44,12 +44,9 @@ class AppManager(EService):
 
     HANDLERS = [AppHandler, RepoHandler, ChartFinderHandler, ChartInfoHandler]
 
-    def __init__(self, context, service_id, helm, kubeconfig, charts_dir,
-                 tmp_dir):
+    def __init__(self, context, service_id, **params):
 
-        super().__init__(context=context, service_id=service_id, helm=helm,
-                         kubeconfig=kubeconfig, charts_dir=charts_dir,
-                         tmp_dir=tmp_dir)
+        super().__init__(context=context, service_id=service_id, **params)
 
         self.helm_client = None
         self.servicemanager = srv("servicemanager")
@@ -62,26 +59,31 @@ class AppManager(EService):
         helm_args = {"helm": self.helm, "kubeconfig": self.kubeconfig,
                      "raise_ex_on_err": True}
         self.helm_client = HelmPythonClient(**helm_args)
+        version, _ = self.helm_client.version()
+        self.log.info("Helm version: %s", version.replace("\n", ""))
 
-    def list_apps(self, ns):
+    def list_apps(self, ns_name):
+        """Return the list of all the apps in a namespace."""
 
-        return self.helm_client.list(namespace=ns)
+        return self.helm_client.list(namespace=ns_name)
 
-    def get_app(self, app_name, ns):
+    def get_app(self, app_name, ns_name):
+        """Return the details of an app."""
 
-        status, _ = self.helm_client.status(app_name, namespace=ns)
-        values, _ = self.helm_client.get_values(app_name, namespace=ns)
+        status, _ = self.helm_client.status(app_name, namespace=ns_name)
+        values, _ = self.helm_client.get_values(app_name, namespace=ns_name)
         release_data = {"status": status, "values": values}
 
         schema_path = Path("%s/%s/values.schema.json"
-                           % (self.get_ns_dir(ns), app_name))
+                           % (self._get_ns_dir(ns_name), app_name))
         if schema_path.exists():
             schema = json.loads(schema_path.read_text())
             release_data["schema"] = schema
 
         return release_data
 
-    def create_app(self, app_name, repochart_name, ns, values, srv_endpoints):
+    def create_app(self, app_name, repochart_name, ns_name, values, **kwargs):
+        """Create a new app."""
 
         app_dir = None
         try:
@@ -90,46 +92,51 @@ class AppManager(EService):
             if repochart_name.count("/") != 1:
                 raise ValueError("Charts must come from a repo (repo/chart)")
 
-            namespace_dir = self.add_ns(ns)  # no effect if it already exists
-            app_dir = self.unpack_chart(repochart_name, app_name,
-                                        namespace_dir)
+            namespace_dir = self._add_ns(ns_name)  # no effect if already there
+            app_dir = self._unpack_chart(repochart_name, app_name,
+                                         namespace_dir)
 
-            self.write_values(app_name, namespace_dir, values)
+            self._write_values(app_name, namespace_dir, values)
 
-            if self.servicemanager:
-                values = self.get_values(app_name, namespace_dir)
-                new_values = self.values_from_endpoints(values, srv_endpoints)
-                self.write_values(app_name, namespace_dir, new_values)
+            srv_endpoints = kwargs.get("srv_endpoints", None)
+            if self.servicemanager and srv_endpoints:
+                values = self._get_values(app_name, namespace_dir)
+                new_values = self._values_from_endpoints(values, srv_endpoints)
+                self._write_values(app_name, namespace_dir, new_values)
 
             data, _ = self.helm_client.install(app_name, app_name,
                                                chart_dir=namespace_dir,
-                                               namespace=ns)
+                                               namespace=ns_name,
+                                               create_namespace=True)
             return data
 
         except Exception as ex:
             if app_dir and app_dir.is_dir():
                 shutil.rmtree(app_dir)
-            self.delete_ns(ns)  # no effect if there are apps inside
+            self._delete_ns(ns_name)  # no effect if there are apps inside
             raise ValueError(ex)
 
-    def update_app(self, app_name, ns, values):
+    def update_app(self, app_name, ns_name, values):
+        """Update an app."""
 
-        namespace_dir = self.get_ns_dir(ns)
-        self.write_values(app_name, namespace_dir, values)
+        namespace_dir = self._get_ns_dir(ns_name)
+        self._write_values(app_name, namespace_dir, values)
         self.helm_client.install(app_name, app_name, upgrade=True,
-                                 chart_dir=namespace_dir, namespace=ns)
+                                 chart_dir=namespace_dir, namespace=ns_name)
 
-    def delete_app(self, app_name, ns):
+    def delete_app(self, app_name, ns_name):
+        """Delete an app."""
 
-        release_dir = "%s/%s" % (self.get_ns_dir(ns), app_name)
+        release_dir = "%s/%s" % (self._get_ns_dir(ns_name), app_name)
         if not Path(release_dir).is_dir():
             raise ValueError("%s is not a directory" % release_dir)
 
         shutil.rmtree(release_dir)
-        self.helm_client.uninstall(app_name, namespace=ns)
-        self.delete_ns(ns)
+        self.helm_client.uninstall(app_name, namespace=ns_name)
+        self._delete_ns(ns_name)
 
-    def unpack_chart(self, repochart_name, app_name, namespace_dir):
+    def _unpack_chart(self, repochart_name, app_name, namespace_dir):
+        """Download and open a chart."""
 
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
@@ -146,7 +153,8 @@ class AppManager(EService):
 
         return app_dir
 
-    def values_from_endpoints(self, values, srv_endpoints):
+    def _values_from_endpoints(self, values, srv_endpoints):
+        """Retrieve updated values from a list of endpoints."""
 
         new_values = values
 
@@ -169,44 +177,53 @@ class AppManager(EService):
 
         return new_values
 
-    def get_values(self, app_name, chart_dir):
+    def _get_values(self, app_name, chart_dir):
+        """Retrieve the values from the chart."""
 
         raw, _ = self.helm_client.show_info(app_name, "values",
                                             chart_dir=chart_dir)
         return yaml.load(raw, yaml.SafeLoader)
 
-    def write_values(self, app_name, chart_dir, values):
+    def _write_values(self, app_name, chart_dir, values):
+        """Write values to a chart."""
 
-        data = self.get_values(app_name, chart_dir)
+        data = self._get_values(app_name, chart_dir)
         new_data = {**data, **values}
         new_raw = yaml.dump(new_data)
 
-        with open("%s/%s/values.yaml" % (chart_dir, app_name), mode="w") as f:
-            f.write(new_raw)
+        values_path = "%s/%s/values.yaml" % (chart_dir, app_name)
+        with open(values_path, mode="w") as values_file:
+            values_file.write(new_raw)
 
     def repo_list(self):
+        """Return the list of all configured repositories."""
 
         data, _ = self.helm_client.repo_list()
         return data
 
     def repo_add(self, name, url, **kwargs):
+        """Add a new repository."""
 
-        data, _ = self.helm_client.repo_add(name, url, **kwargs)
+        self.helm_client.repo_add(name, url, **kwargs)
 
     def repo_update(self):
+        """Update a repository."""
 
-        data, _ = self.helm_client.repo_update()
+        self.helm_client.repo_update()
 
     def repo_remove(self, name):
+        """Remove a repository."""
 
-        data, _ = self.helm_client.repo_remove(name)
+        self.helm_client.repo_remove(name)
 
     def chart_finder(self, keyword):
+        """Find a chart from a keyword."""
 
         data, _ = self.helm_client.search(keyword)
         return data
 
     def chart_get_info(self, chart_name):
+        """Get detailed info about a chart."""
 
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
@@ -224,27 +241,30 @@ class AppManager(EService):
 
         return infos
 
-    def get_ns_dir(self, name=None):
+    def _get_ns_dir(self, name=None):
+        """Return the directory of a chart from its name."""
 
         namespaces = dict()
         for folder in Path(self.charts_dir).iterdir():
             if folder.is_dir():
                 if name and folder.name == name:
                     return folder
-                else:
-                    namespaces[folder.name] = folder
+                namespaces[folder.name] = folder
         if namespaces:
             return namespaces
-        else:
-            return None
+        return None
 
-    def add_ns(self, ns):
-        namespace_dir = "%s/%s" % (self.charts_dir, ns)
+    def _add_ns(self, ns_name):
+        """Add a new namespace folder if it does not already exist."""
+
+        namespace_dir = "%s/%s" % (self.charts_dir, ns_name)
         Path(namespace_dir).mkdir(exist_ok=True)
         return namespace_dir
 
-    def delete_ns(self, ns):
-        ns_dir = self.get_ns_dir(ns)
+    def _delete_ns(self, ns_name):
+        """Delete a namespace folder if there are no apps inside."""
+
+        ns_dir = self._get_ns_dir(ns_name)
         if ns_dir:
             if sum(1 for app_dirs in ns_dir.iterdir()) == 0:
                 shutil.rmtree(ns_dir)
@@ -298,11 +318,11 @@ class AppManager(EService):
         self.params["tmp_dir"] = value
 
 
-def launch(context, service_id, helm=DEFAULT_HELM,
-           kubeconfig=DEFAULT_KUBECONFIG,
-           charts_dir=DEFAULT_CHARTS_DIR, tmp_dir=DEFAULT_TMP_DIR):
+def launch(context, service_id, **kwargs):
     """ Initialize the module. """
 
-    return AppManager(context=context, service_id=service_id, helm=helm,
-                      kubeconfig=kubeconfig, charts_dir=charts_dir,
-                      tmp_dir=tmp_dir)
+    return AppManager(context=context, service_id=service_id,
+                      helm=kwargs.get("helm", DEFAULT_HELM),
+                      kubeconfig=kwargs.get("kubeconfig", DEFAULT_KUBECONFIG),
+                      charts_dir=kwargs.get("charts_dir", DEFAULT_CHARTS_DIR),
+                      tmp_dir=kwargs.get("tmp_dir", DEFAULT_TMP_DIR))

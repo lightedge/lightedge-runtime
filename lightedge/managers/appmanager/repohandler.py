@@ -24,7 +24,8 @@ import empower_core.apimanager.apimanager as apimanager
 class RepoHandler(apimanager.APIHandler):
     """All the accounts defined in the controller."""
 
-    URLS = [r"/api/v1/appmanager/repos"]
+    URLS = [r"/api/v1/appmanager/repos",
+            r"/api/v1/appmanager/repos/([a-zA-Z0-9-]*)"]
 
     @apimanager.validate(min_args=0, max_args=0)
     def get(self):
