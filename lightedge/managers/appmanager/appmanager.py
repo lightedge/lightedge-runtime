@@ -59,8 +59,11 @@ class AppManager(EService):
         helm_args = {"helm": self.helm, "kubeconfig": self.kubeconfig,
                      "raise_ex_on_err": True}
         self.helm_client = HelmPythonClient(**helm_args)
-        version, _ = self.helm_client.version()
-        self.log.info("Helm version: %s", version.replace("\n", ""))
+        version, err = self.helm_client.version(raise_ex_on_err=False)
+        if err:
+            self.log.error("Exception while using Helm binary: %s", err)
+        else:
+            self.log.info("Helm version: %s", version.replace("\n", ""))
 
     def list_apps(self, ns_name):
         """Return the list of all the apps in a namespace."""
