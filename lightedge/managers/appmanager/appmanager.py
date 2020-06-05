@@ -37,6 +37,8 @@ DEFAULT_HELM = "helm"
 DEFAULT_KUBECONFIG = ""
 DEFAULT_CHARTS_DIR = ""
 DEFAULT_TMP_DIR = "/tmp/lightedge"
+DEFAULT_ALLOWED_NS = []
+DEFAULT_ALLOWED_REPOS = []
 
 
 class AppManager(EService):
@@ -64,6 +66,9 @@ class AppManager(EService):
             self.log.error("Exception while using Helm binary: %s", err)
         else:
             self.log.info("Helm version: %s", version.replace("\n", ""))
+            _, err = self.helm_client.repo_update(raise_ex_on_err=False)
+            if err:
+                self.log.error("Exception while updating Helm repos: %s", err)
 
     def list_apps(self, ns_name):
         """Return the list of all the apps in a namespace."""
@@ -101,7 +106,7 @@ class AppManager(EService):
 
             self._write_values(app_name, namespace_dir, values)
 
-            srv_endpoints = kwargs.get("srv_endpoints", None)
+            srv_endpoints = kwargs.get("service_endpoints", None)
             if self.servicemanager and srv_endpoints:
                 values = self._get_values(app_name, namespace_dir)
                 new_values = self._values_from_endpoints(values, srv_endpoints)
@@ -143,7 +148,9 @@ class AppManager(EService):
 
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
-        chart_name = repochart_name.split("/")[1]
+        repo_name, chart_name = repochart_name.split("/")
+        if self.allowed_repos and repo_name not in self.allowed_repos:
+            raise PermissionError("Repo %s not in allowed list" % repo_name)
 
         self.helm_client.pull(repochart_name, chart_dir=self.tmp_dir)
 
@@ -168,6 +175,8 @@ class AppManager(EService):
             jp_data = dict()
             for match in parser.find(values):
                 jp_data[str(match.full_path)] = match.value
+            if not jp_data:
+                raise ValueError("No match found for jsonpath %s" % jsonpath)
 
             service_name = srv_endpoint["name"]
             timeout = None
@@ -260,12 +269,18 @@ class AppManager(EService):
     def _add_ns(self, ns_name):
         """Add a new namespace folder if it does not already exist."""
 
+        if self.allowed_ns and ns_name not in self.allowed_ns:
+            raise PermissionError("Namespace %s not in allowed list" % ns_name)
+
         namespace_dir = "%s/%s" % (self.charts_dir, ns_name)
         Path(namespace_dir).mkdir(exist_ok=True)
         return namespace_dir
 
     def _delete_ns(self, ns_name):
         """Delete a namespace folder if there are no apps inside."""
+
+        if self.allowed_ns and ns_name not in self.allowed_ns:
+            raise PermissionError("Namespace %s not in allowed list" % ns_name)
 
         ns_dir = self._get_ns_dir(ns_name)
         if ns_dir:
@@ -320,6 +335,36 @@ class AppManager(EService):
 
         self.params["tmp_dir"] = value
 
+    @property
+    def allowed_ns(self):
+        """Return allowed_ns."""
+
+        return self.params["allowed_ns"]
+
+    @allowed_ns.setter
+    def allowed_ns(self, value):
+        """Set allowed_ns."""
+
+        if isinstance(value, str):
+            self.params["allowed_ns"] = value.split(",")
+        else:
+            self.params["allowed_ns"] = value
+
+    @property
+    def allowed_repos(self):
+        """Return allowed_repos."""
+
+        return self.params["allowed_repos"]
+
+    @allowed_repos.setter
+    def allowed_repos(self, value):
+        """Set allowed_repos."""
+
+        if isinstance(value, str):
+            self.params["allowed_repos"] = value.split(",")
+        else:
+            self.params["allowed_repos"] = value
+
 
 def launch(context, service_id, **kwargs):
     """ Initialize the module. """
@@ -328,4 +373,7 @@ def launch(context, service_id, **kwargs):
                       helm=kwargs.get("helm", DEFAULT_HELM),
                       kubeconfig=kwargs.get("kubeconfig", DEFAULT_KUBECONFIG),
                       charts_dir=kwargs.get("charts_dir", DEFAULT_CHARTS_DIR),
-                      tmp_dir=kwargs.get("tmp_dir", DEFAULT_TMP_DIR))
+                      tmp_dir=kwargs.get("tmp_dir", DEFAULT_TMP_DIR),
+                      allowed_ns=kwargs.get("allowed_ns", DEFAULT_ALLOWED_NS),
+                      allowed_repos=kwargs.get("allowed_repos",
+                                               DEFAULT_ALLOWED_REPOS))
