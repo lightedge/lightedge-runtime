@@ -39,7 +39,7 @@ class ServiceManager(EService):
 
         self.services = dict()
 
-    def send_request(self, service_name, data, timeout=None):
+    def send_request(self, service_name, timeout=None, **kwargs):
         """Send request to service."""
 
         if service_name not in self.services:
@@ -47,7 +47,8 @@ class ServiceManager(EService):
         service = self.services[service_name]
         if not timeout:
             timeout = service["timeout"]
-        response = requests.put(service["url"], timeout=timeout, json=data)
+
+        response = requests.put(service["url"], timeout=timeout, json=kwargs)
         if response.status_code != service["expected_code"]:
             raise ValueError(response.content)
 

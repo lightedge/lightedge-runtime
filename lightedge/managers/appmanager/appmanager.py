@@ -109,7 +109,8 @@ class AppManager(EService):
             srv_endpoints = kwargs.get("service_endpoints", None)
             if self.servicemanager and srv_endpoints:
                 values = self._get_values(app_name, namespace_dir)
-                new_values = self._values_from_endpoints(values, srv_endpoints)
+                new_values = self._values_from_endpoints(ns_name, app_name,
+                                                         values, srv_endpoints)
                 self._write_values(app_name, namespace_dir, new_values)
 
             data, _ = self.helm_client.install(app_name, app_name,
@@ -163,7 +164,7 @@ class AppManager(EService):
 
         return app_dir
 
-    def _values_from_endpoints(self, values, srv_endpoints):
+    def _values_from_endpoints(self, ns_name, app_name, values, srv_endpoints):
         """Retrieve updated values from a list of endpoints."""
 
         new_values = values
@@ -178,13 +179,16 @@ class AppManager(EService):
             if not jp_data:
                 raise ValueError("No match found for jsonpath %s" % jsonpath)
 
-            service_name = srv_endpoint["name"]
             timeout = None
             if "timeout" in srv_endpoint:
                 timeout = srv_endpoint["timeout"]
 
-            new_jp_data = self.servicemanager.send_request(service_name,
-                                                           jp_data, timeout)
+            body = {"namespace": ns_name,
+                    "app_name": app_name,
+                    "values": jp_data}
+            response = self.servicemanager.send_request(srv_endpoint["name"],
+                                                        timeout, **body)
+            new_jp_data = response["values"]
             parser.update(new_values, list(new_jp_data.values())[0])
 
         return new_values
