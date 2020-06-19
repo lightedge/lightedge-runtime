@@ -17,13 +17,12 @@
 
 """App manager."""
 
+from importlib import import_module
 from pathlib import Path
 import json
 import shutil
 import yaml
 from jsonpath_ng import parse as jsonpath_parse
-
-from helmpythonclient.client import HelmPythonClient
 
 from empower_core.service import EService
 from empower_core.launcher import srv
@@ -39,6 +38,8 @@ DEFAULT_CHARTS_DIR = ""
 DEFAULT_TMP_DIR = "/tmp/lightedge"
 DEFAULT_ALLOWED_NS = []
 DEFAULT_ALLOWED_REPOS = []
+DEFAULT_HELM_MODULE = "helmpythonclient.client"
+DEFAULT_HELM_CLASS = "HelmPythonClient"
 
 
 class AppManager(EService):
@@ -60,7 +61,8 @@ class AppManager(EService):
 
         helm_args = {"helm": self.helm, "kubeconfig": self.kubeconfig,
                      "raise_ex_on_err": True}
-        self.helm_client = HelmPythonClient(**helm_args)
+        self.helm_client = getattr(import_module(self.helm_module),
+                                   self.helm_class)(**helm_args)
         version, err = self.helm_client.version(raise_ex_on_err=False)
         if err:
             self.log.error("Exception while using Helm binary: %s", err)
@@ -369,6 +371,30 @@ class AppManager(EService):
         else:
             self.params["allowed_repos"] = value
 
+    @property
+    def helm_module(self):
+        """Return helm_module."""
+
+        return self.params["helm_module"]
+
+    @helm_module.setter
+    def helm_module(self, value):
+        """Set helm_module."""
+
+        self.params["helm_module"] = value
+
+    @property
+    def helm_class(self):
+        """Return helm_class."""
+
+        return self.params["helm_class"]
+
+    @helm_class.setter
+    def helm_class(self, value):
+        """Set helm_class."""
+
+        self.params["helm_class"] = value
+
 
 def launch(context, service_id, **kwargs):
     """ Initialize the module. """
@@ -380,4 +406,7 @@ def launch(context, service_id, **kwargs):
                       tmp_dir=kwargs.get("tmp_dir", DEFAULT_TMP_DIR),
                       allowed_ns=kwargs.get("allowed_ns", DEFAULT_ALLOWED_NS),
                       allowed_repos=kwargs.get("allowed_repos",
-                                               DEFAULT_ALLOWED_REPOS))
+                                               DEFAULT_ALLOWED_REPOS),
+                      helm_module=kwargs.get("helm_module",
+                                             DEFAULT_HELM_MODULE),
+                      helm_class=kwargs.get("helm_class", DEFAULT_HELM_CLASS))
