@@ -24,7 +24,7 @@ import empower_core.apimanager.apimanager as apimanager
 class UEMapHandler(apimanager.APIHandler):
     """All the accounts defined in the controller."""
 
-    URLS = [r"/upf/v1/uemap/?", r"/upf/v1/uemap/([0-9.]*)"]
+    URLS = [r"/api/v1/uemap/?", r"/upf/v1/uemap/([0-9.]*)"]
 
     @apimanager.validate(min_args=0, max_args=1)
     def get(self, ue_ip=None):

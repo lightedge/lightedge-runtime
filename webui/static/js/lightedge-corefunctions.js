@@ -1,15 +1,15 @@
 /**
- * Class WEBUI_CoreFunctions is a support class for importing into extending 
- * classes a set of common functions that can be useful for managing the 
+ * Class WEBUI_CoreFunctions is a support class for importing into extending
+ * classes a set of common functions that can be useful for managing the
  * activity over the WEBUI
- * 
+ *
  */
 class WEBUI_CoreFunctions{
- 
+
   /**
    * This method checks if candidate argument is null
-   * @param {*} candidate 
-   * 
+   * @param {*} candidate
+   *
    * @return true if is null, false otherwise
    */
   _is_null(candidate) {
@@ -21,8 +21,8 @@ class WEBUI_CoreFunctions{
 
   /**
    * This method checks if candidate argument is undefined
-   * @param {*} candidate 
-   * 
+   * @param {*} candidate
+   *
    * @return true if is undefined, false otherwise
    */
   _is_undefined(candidate) {
@@ -34,8 +34,8 @@ class WEBUI_CoreFunctions{
 
   /**
    * This method checks if candidate argument is null OR undefined
-   * @param {*} candidate 
-   * 
+   * @param {*} candidate
+   *
    * @return true if is null OR undefined, false otherwise
    */
   _is_there(candidate) {
@@ -43,9 +43,19 @@ class WEBUI_CoreFunctions{
   }
 
   /**
+   * This method checks if candidate argument is an array
+   * @param {*} candidate
+   *
+   * @return true if is an array, false otherwise
+   */
+  _is_array(candidate) {
+    return (candidate instanceof Array)
+  }
+
+  /**
    * This method checks if candidate argument is string
-   * @param {*} candidate 
-   * 
+   * @param {*} candidate
+   *
    * @return true if is string, false otherwise
    */
   _is_string(candidate) {
@@ -54,8 +64,8 @@ class WEBUI_CoreFunctions{
 
   /**
    * This method checks if candidate argument is string ""
-   * @param {*} candidate 
-   * 
+   * @param {*} candidate
+   *
    * @return true if candidate is "" string, false otherwise
    */
   _is_void_string(candidate) {
@@ -129,7 +139,7 @@ class WEBUI_CoreFunctions{
 
   /**
    * This function converts an HTML code string into a jQuery object
-   * @param {string} html_str - the HTML code string to be converted 
+   * @param {string} html_str - the HTML code string to be converted
    * @return {object|null} jQuery object if conversion succeded, null otherwise
    */
   _convert_html_to_jquery(html_str = '<DIV></DIV>') {
@@ -143,10 +153,10 @@ class WEBUI_CoreFunctions{
 }
 
 /**
- * An istance of WEBUI_CoreFunctions class is made available globally through 
- * the global variable __LIGHTEDGE_WEBUI (to avoid reinstanciating it every time 
+ * An istance of WEBUI_CoreFunctions class is made available globally through
+ * the global variable __LIGHTEDGE_WEBUI (to avoid reinstanciating it every time
  * to access its provided functions)
- * 
+ *
  * @global
  */
 

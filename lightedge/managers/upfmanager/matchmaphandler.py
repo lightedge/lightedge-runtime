@@ -25,9 +25,9 @@ import empower_core.apimanager.apimanager as apimanager
 class MatchMapHandler(apimanager.APIHandler):
     """All the accounts defined in the controller."""
 
-    URLS = [r"/upf/v1/matchmap/([-0-9.]*)",
-            r"/upf/v1/matchmap/(\bchecked\b)",
-            r"/upf/v1/matchmap"]
+    URLS = [r"/api/v1/matchmap/([-0-9.]*)",
+            r"/api/v1/matchmap/(\bchecked\b)",
+            r"/api/v1/matchmap"]
 
     @apimanager.validate(min_args=0, max_args=1)
     def get(self, match_index=0):
@@ -88,7 +88,7 @@ class MatchMapHandler(apimanager.APIHandler):
             }
 
         """
-        
+
         # self.service.upf_request_validator.get_matchmap(match_index)
 
         # if match_index:
@@ -136,14 +136,14 @@ class MatchMapHandler(apimanager.APIHandler):
         #     match_index = int (match_index)
         #     if match_index <= 0:
         #         message = "Invalid match index '%i': must be greater than 0"\
-        #                   % match_index 
+        #                   % match_index
         #         raise ValueError(message)
         #     matches_length = len(self.service.matches)
         #     if matches_length == 0:
         #         if match_index != 1:
         #             message =\
         #                 "Match list is void: inserting match index has to be 1"\
-        #                 % match_index 
+        #                 % match_index
         #             raise ValueError(message)
         #     elif match_index > matches_length:
         #         message = "Invalid match index '%i': acceptable range is [1, %i]"\
@@ -151,7 +151,7 @@ class MatchMapHandler(apimanager.APIHandler):
         #         raise ValueError(message)
         #     return self.service.matches[int(match_index) - 1]
 
-        # self.service.upf_request_validator.post_matchmap(match_index, 
+        # self.service.upf_request_validator.post_matchmap(match_index,
         #                                                  request_data)
 
         if match_index == '':

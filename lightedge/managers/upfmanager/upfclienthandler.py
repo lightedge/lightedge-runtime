@@ -25,7 +25,7 @@ import empower_core.apimanager.apimanager as apimanager
 class UPFClientHandler(apimanager.APIHandler):
     """All the accounts defined in the controller."""
 
-    URLS = [r"/upf/v1/client/?"]
+    URLS = [r"/api/v1/client/?"]
 
     @apimanager.validate(min_args=0, max_args=0)
     def get(self):
