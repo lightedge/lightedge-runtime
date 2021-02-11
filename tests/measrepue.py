@@ -29,32 +29,34 @@ class TestMeasRepUe(BaseTest):
         """test_create_existing_user."""
 
         data = {
-            "MeasRepUeSubscription": {
-                "callbackReference": "http://mec.client/rni/v1",
-                "filterCriteria": {
-                    "appInsId": "01",
-                    "associateId": {
-                        "type": "UE_IPV4_ADDRESS",
-                        "value": "192.168.10.1"
-                    },
-                    "plmn": {
-                        "mcc": "001",
-                        "mnc": "01"
-                    },
-                    "cellId": "0x800000A",
-                    "trigger": "PERIODICAL_REPORT_STRONGEST_CELLS"
+            "callbackReference": "http://127.0.0.1:5000/callback",
+            "filterCriteriaAssocTri": {
+                "appInstanceId": "069898f8-5e71-4010-94d2-29982ecad9dd",
+                "associateId": [{
+                    "type": "IMSI",
+                    "value": "222930100001114"
+                }],
+                "ecgi": {
+                  "cellId": "0x03",
+                  "plmn": {
+                    "mcc": "222",
+                    "mnc": "93"
+                  }
                 },
-                "expiryDeadline": {
-                    "seconds": 1577836800,
-                    "nanoSeconds": 0
-                }
-            }
+                "trigger": ["PERIODICAL_REPORT_STRONGEST_CELLS"]
+            },
+            "expiryDeadline": {
+                "seconds": 1577836800,
+                "nanoSeconds": 0
+            },
+            "subscriptionType": "MeasRepUeSubscription"
         }
 
-        loc = "/rni/v1/subscriptions/meas_rep_ue/" \
-            "f48d7f17-5411-4d01-b99e-01bbc3ef49A3"
+        loc = "/rni/v2/subscriptions/fa0141c0-d8f6-4249-9d7d-f7dd35be3e3a"
 
         self.post(("root", "root", loc), data, 201)
+
+        return
 
         self.get(("root", "root", loc), 200)
 

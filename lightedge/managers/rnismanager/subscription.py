@@ -17,6 +17,7 @@
 
 """A genercic subscription."""
 
+from empower_core.launcher import srv_or_die
 from empower_core.worker import EWorker
 
 
@@ -25,6 +26,8 @@ class Subscription(EWorker):
 
     SUB_TYPE = None
     SUB_CONFIG = None
+    SUB_PARAMS = ['callbackReference', 'expiryDeadline', 'subscriptionType']
+
     MODULES = []
 
     def __init__(self, context, service_id, every, subscription):
@@ -32,17 +35,25 @@ class Subscription(EWorker):
         super().__init__(context=context, service_id=service_id, every=every,
                          subscription=subscription)
 
+        self.manager = srv_or_die("rnimanager")
+
     @property
     def callback_reference(self):
         """Return callback_reference."""
 
-        return self.subscription[self.SUB_CONFIG]['callbackReference']
+        return self.subscription['callbackReference']
 
     @property
     def expiry_deadline(self):
         """Return expiry_deadline."""
 
-        return self.subscription[self.SUB_CONFIG]['expiryDeadline']
+        return self.subscription['expiryDeadline']
+
+    @property
+    def subscription_type(self):
+        """Return expiry_deadline."""
+
+        return self.subscription['subscriptionType']
 
     @property
     def subscription(self):
@@ -54,20 +65,8 @@ class Subscription(EWorker):
     def subscription(self, value):
         """Set subscription."""
 
-        if self.SUB_CONFIG not in value:
-            raise ValueError("Unable to find '%s'" % self.SUB_CONFIG)
-
-        required_params = ['callbackReference', 'expiryDeadline']
-
-        for param in required_params:
-            if param not in value[self.SUB_CONFIG]:
+        for param in self.SUB_PARAMS:
+            if param not in value:
                 raise ValueError("Unable to find '%s'")
 
         self.params["subscription"] = value
-
-    @property
-    def href(self):
-        """Return href."""
-
-        return "%s/notifications/%s/%s" % \
-            (self.callback_reference, self.SUB_TYPE, self.service_id)

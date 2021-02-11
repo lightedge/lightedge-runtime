@@ -21,7 +21,7 @@ import json
 import unittest
 import requests
 
-URL = "http://%s:%s@127.0.0.1:8888%s"
+URL = "http://%s:%s@127.0.0.1:8889%s"
 
 
 class BaseTest(unittest.TestCase):
@@ -30,8 +30,7 @@ class BaseTest(unittest.TestCase):
     def setUp(self):
         """Delete test entries."""
 
-        requests.delete(url=URL % ("root", "root",
-                                   "/rni/v1/subscriptions/meas_rep_ue"))
+        requests.delete(url=URL % ("root", "root", "/rni/v2/subscriptions"))
 
     def get(self, params, result):
         """REST get method."""

@@ -17,18 +17,25 @@
 
 """RNIS Manager."""
 
+import json
+import requests
+
 from empower_core.service import EService
 from empower_core.launcher import srv_or_die
 
 from lightedge.managers.rnismanager.subscription import Subscription
 from lightedge.managers.rnismanager.subscriptionshandler import \
     SubscriptionsHandler
+from lightedge.managers.rnismanager.subscriptionscallbackhandler import \
+    SubscriptionsCallbackHandler
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8888
+DEFAULT_USER = "root"
+DEFAULT_PWD = "root"
 
 SUBSCRIPTIONS = {
-    "meas_rep_ue": "lightedge.workers.measrepue.measrepue"
+    "MeasRepUeSubscription": "lightedge.workers.measrepue.measrepue"
 }
 
 
@@ -40,76 +47,93 @@ class RNISManager(EService):
         ctrl_host: sd-ran controller port (optional, default: 8888)
     """
 
-    HANDLERS = [SubscriptionsHandler]
+    HANDLERS = [SubscriptionsHandler, SubscriptionsCallbackHandler]
 
-    def __init__(self, context, service_id, ctrl_host, ctrl_port):
+    def __init__(self, context, service_id, ctrl_host, ctrl_port,
+                 ctrl_user, ctrl_pwd):
 
         super().__init__(context=context, service_id=service_id,
-                         ctrl_host=ctrl_host, ctrl_port=ctrl_port)
+                         ctrl_host=ctrl_host, ctrl_port=ctrl_port,
+                         ctrl_user=ctrl_user, ctrl_pwd=ctrl_pwd)
+
+    def handle_callback(self, service_id, callback):
+        """Subscription callback invoked by empower."""
+
+        self.log.info("Received callback for service %s", service_id)
+        self.log.info(callback)
+
+    @property
+    def empower_url(self):
+        """Return empower URL."""
+
+        params = (self.ctrl_user, self.ctrl_pwd, self.ctrl_host,
+                  self.ctrl_port)
+
+        return "http://%s:%s@%s:%u/api/v1" % params
+
+    def get(self, url):
+        """REST get method."""
+
+        return requests.get(url=self.empower_url + url)
+
+    def post(self, url, data):
+        """Test post method."""
+
+        data["version"] = "1.0"
+
+        return requests.post(url=self.empower_url + url, data=json.dumps(data))
+
+    def delete(self, url):
+        """REST delete method."""
+
+        return requests.delete(url=self.empower_url + url)
 
     @property
     def subscriptions(self):
-        """Return ctrl_host."""
+        """Return subscriptions."""
 
         subscriptions = {}
-
-        for sub_type in SUBSCRIPTIONS:
-            subscriptions[sub_type] = {}
 
         for service in srv_or_die("envmanager").env.services.values():
 
             if not isinstance(service, Subscription):
                 continue
 
-            subscriptions[service.SUB_TYPE][service.service_id] = service
+            subscriptions[service.service_id] = service
 
         return subscriptions
 
-    def get_subscriptions_links(self, sub_type, sub_id=None):
+    def get_subscriptions_links(self):
         """Return subscriptions."""
 
         out = {
-            "SubscriptionLinkList": {
-                "_links": {
-                    "self": "/rni/v1/subscriptions/%s" % sub_type,
-                    "subscription": []
-                }
+            "_links": {
+                "self": "/rni/v2/subscriptions",
+                "subscription": []
             }
         }
 
-        if sub_id:
+        for sub in self.subscriptions.values():
 
             to_add = {
-                "href": self.subscriptions[sub_type][sub_id].href,
-                "subscriptionType": sub_type
+                "href": "/rni/v2/subscriptions/%s" % sub.service_id,
+                "subscriptionType": sub.SUB_CONFIG
             }
 
-            out["SubscriptionLinkList"]["_links"]["subscription"] \
-                .append(to_add)
-
-        else:
-
-            for subscription in self.subscriptions[sub_type].values():
-
-                to_add = {
-                    "href": subscription.href,
-                    "subscriptionType": subscription.SUB_TYPE
-                }
-
-                out["SubscriptionLinkList"]["_links"]["subscription"] \
-                    .append(to_add)
+            out["_links"]["subscription"].append(to_add)
 
         return out
 
-    def add_subscription(self, sub_id, sub_type, **kwargs):
+    def add_subscription(self, sub_id, params):
         """Add a new subscription."""
 
-        if sub_type not in self.subscriptions:
-            raise ValueError("Invalid subscription type: %s" % sub_type)
+        if sub_id in self.subscriptions:
+            raise ValueError("Subscription %s already defined" % sub_id)
 
-        name = SUBSCRIPTIONS[sub_type]
+        name = SUBSCRIPTIONS[params['subscriptionType']]
+
         params = {
-            "subscription": kwargs
+            "subscription": params
         }
 
         env = srv_or_die("envmanager").env
@@ -119,12 +143,17 @@ class RNISManager(EService):
 
         return sub
 
-    def rem_subscription(self, sub_type, sub_id):
+    def rem_subscription(self, sub_id=None):
         """Remove subscription."""
 
-        service_id = self.subscriptions[sub_type][sub_id].service_id
+        env = srv_or_die("envmanager").env
 
-        srv_or_die("envmanager").env.unregister_service(service_id=service_id)
+        if sub_id:
+            service_id = self.subscriptions[sub_id].service_id
+            env.unregister_service(service_id=service_id)
+        else:
+            for service_id in self.subscriptions:
+                env.unregister_service(service_id=service_id)
 
     @property
     def ctrl_host(self):
@@ -149,16 +178,48 @@ class RNISManager(EService):
 
     @ctrl_port.setter
     def ctrl_port(self, value):
-        """Set host."""
+        """Set ctrl_port."""
 
         if "ctrl_port" in self.params and self.params["ctrl_port"]:
             raise ValueError("Param ctrl_port can not be changed")
 
         self.params["ctrl_port"] = int(value)
 
+    @property
+    def ctrl_user(self):
+        """Return ctrl_user."""
+
+        return self.params["ctrl_user"]
+
+    @ctrl_user.setter
+    def ctrl_user(self, value):
+        """Set ctrl_user."""
+
+        if "ctrl_user" in self.params and self.params["ctrl_user"]:
+            raise ValueError("Param ctrl_user can not be changed")
+
+        self.params["ctrl_user"] = value
+
+    @property
+    def ctrl_pwd(self):
+        """Return ctrl_pwd."""
+
+        return self.params["ctrl_pwd"]
+
+    @ctrl_pwd.setter
+    def ctrl_pwd(self, value):
+        """Set ctrl_pwd."""
+
+        if "ctrl_pwd" in self.params and self.params["ctrl_pwd"]:
+            raise ValueError("Param ctrl_pwd can not be changed")
+
+        self.params["ctrl_pwd"] = value
+
 
 def launch(context, service_id, ctrl_host=DEFAULT_HOST,
-           ctrl_port=DEFAULT_PORT):
+           ctrl_port=DEFAULT_PORT, ctrl_user=DEFAULT_USER,
+           ctrl_pwd=DEFAULT_PWD):
     """ Initialize the module. """
 
-    return RNISManager(context, service_id, ctrl_host, ctrl_port)
+    return RNISManager(context, service_id, ctrl_host, ctrl_port, ctrl_user,
+                       ctrl_pwd)

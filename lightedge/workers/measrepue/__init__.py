@@ -18,14 +18,14 @@
 """Measurement Report UE Subscription Worker."""
 
 MANIFEST = {
-    "label": "Measurement Report UE Subscription Worker",
-    "desc": "Measurement Report UE Subscription Worker",
+    "label": "Measurement Report UE Subscription",
+    "desc": "A subscription to UE measurement report notifications from RNIS",
     "callbacks": {
         "default": "Called when new measurements are available"
     },
     "modules": [],
     "params": {
-        "MeasRepUeSubscription": {
+        "subscription": {
             "desc": "The Measurement Report UE Subscription.",
             "mandatory": True,
             "type": "json"

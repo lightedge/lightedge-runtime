@@ -26,81 +26,81 @@ import empower_core.apimanager.apimanager as apimanager
 class SubscriptionsHandler(apimanager.APIHandler):
     """Access the RNI subscriptions."""
 
-    URLS = [r"/rni/v1/subscriptions/([a-zA-Z0-9_]*)/?",
-            r"/rni/v1/subscriptions/([a-zA-Z0-9_]*)/([a-zA-Z0-9-]*)/?"]
+    URLS = [r"/rni/v2/subscriptions/?",
+            r"/rni/v2/subscriptions/([a-zA-Z0-9-]*)/?"]
 
-    @apimanager.validate(min_args=1, max_args=2)
-    def get(self, sub_type, sub_id=None):
+    @apimanager.validate(min_args=0, max_args=1)
+    def get(self, sub_id=None):
         """Get the subscriptions
 
         Example URLs:
 
-            GET /rni/v1/subscriptions/meas_rep_ue
+            GET /rni/v2/subscriptions
 
             {
-              "SubscriptionLinkList": {
-                "_links": {
-                  "self": "http://uri/rni/v1/subscriptions/meas_rep_ue",
-                  "subscription": [
-                    {
-                      "href": "http://uri/rni/v1/meas_rep_ue/77777",
-                      "subscriptionType": "MEAS_REPORT_UE"
-                    },
-                    {
-                      "href": "http://uri/rni/v1/meas_rep_ue/77778",
-                      "subscriptionType": "MEAS_REPORT_UE"
-                    }
-                  ]
-                }
+              "_links": {
+                "self": {
+                  "href": "http://uri/rni/v2/subscriptions"
+                },
+                "subscription": [{
+                    "href": "http://uri/rni/v2/subscriptions/1",
+                    "subscriptionType": "MeasRepUeSubscription"
+                  },
+                  {
+                    "href": "http://uri/rni/v2/subscriptions/2",
+                    "subscriptionType": "MeasRepUeSubscription"
+                  }
+                ]
               }
             }
         """
 
-        sub_id = uuid.UUID(sub_id) if sub_id else None
+        if sub_id:
+            return self.service.subscriptions[uuid.UUID(sub_id)].subscription
 
-        return self.service.get_subscriptions_links(sub_type, sub_id)
+        return self.service.get_subscriptions_links()
 
-    @apimanager.validate(returncode=201, min_args=1, max_args=2)
+    @apimanager.validate(returncode=201, min_args=0, max_args=1)
     def post(self, *args, **kwargs):
         """Create a new subscription.
 
-        POST /rni/v1/subscriptions/meas_rep_ue
+        POST /rni/v2/subscriptions
 
         {
-          "MeasRepUeSubscription": {
-            "callbackReference": "http://meAppClient.example.com/rni/v1/",
-            "filterCriteria": {
-              "appInsId": "01",
-              "associateId": {
-                "type": "UE_IPV4_ADDRESS",
-                "value": "192.168.10.1"
-              },
+          "callbackReference": "http://client.example.com/rni/v1/",
+          "filterCriteriaAssocTri": {
+            "appInstanceId": "069898f8-5e71-4010-94d2-29982ecad9dd",
+            "associateId": [{
+              "type": "IMSI",
+              "value": "222930100001114"
+            }],
+            "ecgi": {
+              "cellId": "0x03",
               "plmn": {
-                "mcc": "001",
-                "mnc": "01"
-              },
-              "cellId": "0x800000A",
-              "trigger": "PERIODICAL_REPORT_STRONGEST_CELLS"
+                "mcc": "222",
+                "mnc": "93"
+              }
             },
-            "expiryDeadline": {
-              "seconds": 1577836800,
-              "nanoSeconds": 0
-            }
-          }
+            "trigger": ["PERIODICAL_REPORT_STRONGEST_CELLS"]
+          },
+          "expiryDeadline": {
+            "seconds": 1577836800,
+            "nanoSeconds": 0
+          },
+          "subscriptionType": "MeasRepUeSubscription"
         }
         """
 
-        sub_type = args[0]
-        sub_id = uuid.UUID(args[1]) if len(args) > 1 else uuid.uuid4()
+        sub_id = uuid.UUID(args[0]) if len(args) > 0 else uuid.uuid4()
 
-        sub = self.service.add_subscription(sub_type=sub_type, sub_id=sub_id,
-                                            **kwargs)
+        sub = \
+            self.service.add_subscription(sub_id=sub_id, params=kwargs)
 
-        self.set_header("Location", "/rni/v1/subscriptions/%s/%s" %
-                        (sub.SUB_TYPE, sub.service_id))
+        self.set_header("Location", "/rni/v2/subscriptions/%s" %
+                        sub.service_id)
 
-    @apimanager.validate(returncode=204, min_args=2, max_args=2)
-    def delete(self, sub_type, sub_id):
+    @apimanager.validate(returncode=204, min_args=0, max_args=1)
+    def delete(self, sub_id=None):
         """Delete a subscription.
 
         Args:
@@ -109,10 +109,10 @@ class SubscriptionsHandler(apimanager.APIHandler):
 
         Example URLs:
 
-            DELETE /rni/v1/subscriptions/
-                meas_rep_ue/52313ecb-9d00-4b7d-b873-b55d3d9ada26
+            DELETE /rni/v2/subscriptions/
+              52313ecb-9d00-4b7d-b873-b55d3d9ada26
         """
 
-        sub_id = uuid.UUID(sub_id)
+        sub_id = uuid.UUID(sub_id) if sub_id else None
 
-        self.service.rem_subscription(sub_type=sub_type, sub_id=sub_id)
+        self.service.rem_subscription(sub_id=sub_id)
