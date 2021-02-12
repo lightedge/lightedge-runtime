@@ -17,6 +17,8 @@
 
 """A genercic subscription."""
 
+import json
+
 from empower_core.launcher import srv_or_die
 from empower_core.worker import EWorker
 
@@ -64,6 +66,8 @@ class Subscription(EWorker):
     @subscription.setter
     def subscription(self, value):
         """Set subscription."""
+
+        value = json.loads(value)
 
         for param in self.SUB_PARAMS:
             if param not in value:
