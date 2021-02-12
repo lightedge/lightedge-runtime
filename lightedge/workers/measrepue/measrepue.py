@@ -96,7 +96,7 @@ class MeasRepUe(Subscription):
             "params": {
                 "imsi": imsi.to_str(),
                 "meas_id": 1,
-                "interval": "MS240",
+                "interval": "MS480",
                 "amount": "INFINITY"
             }
         }

@@ -59,7 +59,7 @@ class RNISManager(EService):
     def handle_callback(self, service_id, callback):
         """Subscription callback invoked by empower."""
 
-        self.log.info("Received callback for service %s", service_id)
+        self.log.info("Received callback for subscription %s", service_id)
         self.log.info(callback)
 
     @property
