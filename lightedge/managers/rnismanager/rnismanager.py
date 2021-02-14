@@ -20,6 +20,8 @@
 import json
 import requests
 
+from tornado.httpclient import AsyncHTTPClient
+
 from empower_core.service import EService
 from empower_core.launcher import srv_or_die
 
@@ -71,22 +73,26 @@ class RNISManager(EService):
 
         return "http://%s:%s@%s:%u/api/v1" % params
 
-    def get(self, url):
+    async def get(self, url):
         """REST get method."""
 
-        return requests.get(url=self.empower_url + url)
+        http_client = AsyncHTTPClient()
+        response = await http_client.fetch(self.empower_url + url)
 
-    def post(self, url, data):
+        return response
+
+    async def post(self, url, data):
         """Test post method."""
 
         data["version"] = "1.0"
 
-        return requests.post(url=self.empower_url + url, data=json.dumps(data))
+        http_client = AsyncHTTPClient()
 
-    def delete(self, url):
-        """REST delete method."""
+        response = await http_client.fetch(self.empower_url + url,
+                                           method='POST',
+                                           body=json.dumps(data))
 
-        return requests.delete(url=self.empower_url + url)
+        return response
 
     @property
     def subscriptions(self):

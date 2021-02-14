@@ -18,6 +18,7 @@
 """Measurement Report UE Subscription."""
 
 import uuid
+import json
 
 from empower_core.app import EVERY
 from empower_core.plmnid import PLMNID
@@ -42,7 +43,7 @@ class MeasRepUe(Subscription):
         self.app_id = None
         self.project_id = None
 
-    def loop(self):
+    async def loop(self):
         """Periodic loop."""
 
         # Both project id and app id are set check if they are valid
@@ -51,23 +52,25 @@ class MeasRepUe(Subscription):
             url = "/projects/%s/apps/%s/callbacks/default" % \
                 (self.project_id, self.app_id)
 
-            req = self.manager.get(url)
+            resp = await self.manager.get(url)
 
             # All ok, we can return
-            if req.status_code == 200:
+            if resp.code == 200:
                 return
 
         # Look for project id
         plmn = self.subscription['filterCriteriaAssocTri']['ecgi']['plmn']
         plmnid = PLMNID("".join(plmn.values()))
 
-        req = self.manager.get("/projects")
+        resp = await self.manager.get("/projects")
 
-        if not req.status_code == 200:
+        if not resp.code == 200:
             self.log.error("Unable to find PLMN %s", plmnid)
             return
 
-        for project in req.json().values():
+        projects = json.loads(resp.body)
+
+        for project in projects.values():
 
             if not project['lte_props']:
                 continue
@@ -76,9 +79,9 @@ class MeasRepUe(Subscription):
                 self.project_id = uuid.UUID(project['project_id'])
                 break
 
-        req = self.manager.get("/projects/%s" % self.project_id)
+        resp = await self.manager.get("/projects/%s" % self.project_id)
 
-        if req.status_code != 200:
+        if resp.code != 200:
             self.log.error("Unable to find PLMN %s", plmnid)
             return
 
@@ -101,14 +104,15 @@ class MeasRepUe(Subscription):
             }
         }
 
-        req = self.manager.post("/projects/%s/apps" % self.project_id, data)
+        url = "/projects/%s/apps" % self.project_id
+        resp = await self.manager.post(url, data)
 
-        if not req.status_code == 201:
+        if not resp.code == 201:
             self.log.error("Unable to start worker, error %u",
-                           req.status_code)
+                           resp.code)
             return
 
-        location = req.headers['Location']
+        location = resp.headers['Location']
 
         self.app_id = location.split("/")[-1]
 
@@ -122,11 +126,11 @@ class MeasRepUe(Subscription):
         }
 
         url = "/projects/%s/apps/%s/callbacks" % (self.project_id, self.app_id)
-        req = self.manager.post(url, data)
+        resp = await self.manager.post(url, data)
 
-        if not req.status_code == 201:
+        if not resp.code == 201:
             self.log.error("Unable to add callback, error %u",
-                           req.status_code)
+                           resp.code)
             return
 
         self.log.info("Remote worker successfully configured.")
