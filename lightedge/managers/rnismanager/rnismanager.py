@@ -18,7 +18,6 @@
 """RNIS Manager."""
 
 import json
-import requests
 
 from tornado.httpclient import AsyncHTTPClient
 
