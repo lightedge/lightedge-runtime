@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2020 Giovanni Baggio
+# Copyright (c) 2021 Roberto Riggio
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 
 """Service handler."""
 
+import uuid
+
 import empower_core.apimanager.apimanager as apimanager
 
 
@@ -24,82 +26,120 @@ import empower_core.apimanager.apimanager as apimanager
 class ServiceHandler(apimanager.APIHandler):
     """Handle services."""
 
-    URLS = [r"/api/v1/servicemanager/?",
-            r"/api/v1/servicemanager/([a-zA-Z0-9-]*)/?"]
+    URLS = [r"/api/v1/services/?",
+            r"/api/v1/services/([a-zA-Z0-9-]*)/?"]
 
     @apimanager.validate(min_args=0, max_args=1)
-    def get(self, service_name=None):
+    def get(self, *args):
         """List entries in the Match Map.
         Args:
-            [0]: the service name
+            [0]: the service UUID
         Example URLs:
-            GET /api/v1/servicemanager
+            GET /api/v1/services
             [
                 {
-                    "name": "service1",
-                    "description": "description of service1",
-                    "url": "http://localhost:8000/double_endpoint",
-                    "timeout": 3000,
-                    "expected_code": 200
+                    "serInstanceId": "ad13ffb8-a7ed-423d-b758-afdf9c4d5369",
+                    "serName": "Radio Network Information Service",
+                    "serCategory": {
+                        "href": "/rni/v2/",
+                        "id": "rni",
+                        "name": "Radio Network Information Service",
+                        "version": "2.0"
+                    },
+                    "version": "1.0",
+                    "state": "ACTIVE",
+                    "serializer": "JSON",
                 },
                 {
-                    "name": "service2",
-                    "description": "description of service2",
-                    "url": "http://localhost:8000/content_endpoint",
-                    "timeout": 3000,
-                    "expected_code": 200
-                }
+                    "serInstanceId": "ad13ffb8-a7ed-423d-b758-afdf9c4d5371",
+                    "serName": "WLAN Information API",
+                    "serCategory": {
+                        "href": "/wia/v1/",
+                        "id": "WIA",
+                        "name": "WLAN Information API",
+                        "version": "1.0"
+                    },
+                    "version": "1.0",
+                    "state": "ACTIVE",
+                    "serializer": "JSON",
+                },
             ]
-            GET /api/v1/servicemanager/service1
+            GET /api/v1/services/ad13ffb8-a7ed-423d-b758-afdf9c4d5369
             {
-                "name": "service1",
-                "description": "description of service1",
-                "url": "http://localhost:8000/double_endpoint",
-                "timeout": 3000,
-                "expected_code": 200
+                "serInstanceId": "ad13ffb8-a7ed-423d-b758-afdf9c4d5369",
+                "serName": "Radio Network Information Service",
+                "serCategory": {
+                    "href": "/rni/v2/",
+                    "id": "rni",
+                    "name": "Radio Network Information Service",
+                    "version": "2.0"
+                },
+                "version": "1.0",
+                "state": "ACTIVE",
+                "serializer": "JSON",
             }
         """
 
-        return self.service.get_services(service_name)
+        if args:
+            return self.service.get_services(uuid.UUID(args[0]))
 
-    @apimanager.validate(returncode=201, min_args=0, max_args=0)
-    def post(self, **kwargs):
+        return self.service.get_services()
+
+    @apimanager.validate(returncode=201, min_args=0, max_args=1)
+    def post(self, *args, **kwargs):
         """Add a new service.
         Example URLs:
             POST /api/v1/servicemanager
             {
-                "name": "service1",
-                "description": "description of service1",
-                "url": "http://localhost:8000/double_endpoint",
-                "timeout": 3000
+              "serInstanceId": "ad13ffb8-a7ed-423d-b758-afdf9c4d5369",
+              "serName": "Radio Network Information Service",
+              "serCategory": {
+                "href": "/rni/v2/",
+                "id": "rni",
+                "name": "Radio Network Information Service",
+                "version": "2.0"
+              },
+              "version": "1.0",
+              "state": "ACTIVE",
+              "serializer": "JSON",
             }
         """
 
-        return self.service.add_service(kwargs)
+        mec_service_id = uuid.UUID(args[0]) if args else uuid.uuid4()
+
+        return self.service.upsert_service(mec_service_id, kwargs)
 
     @apimanager.validate(returncode=204, min_args=1, max_args=1)
-    def put(self, service_name, **kwargs):
+    def put(self, *args, **kwargs):
         """Update a service.
         Args:
-            [0]: the service name
+            [0]: the service UUID
         Example URLs:
-            PUT /api/v1/servicemanager/service1
+            PUT /api/v1/servicemanager/ad13ffb8-a7ed-423d-b758-afdf9c4d5369
             {
-                "name": "service1",
-                "description": "description of service1",
-                "url": "http://localhost:1234"
+              "serInstanceId": "ad13ffb8-a7ed-423d-b758-afdf9c4d5369",
+              "serName": "Radio Network Information Service",
+              "serCategory": {
+                "href": "/rni/v2/",
+                "id": "rni",
+                "name": "Radio Network Information Service",
+                "version": "2.0"
+              },
+              "version": "1.0",
+              "state": "ACTIVE",
+              "serializer": "JSON",
             }
         """
 
-        return self.service.update_service(service_name, kwargs)
+        return self.service.upsert_service(uuid.UUID(args[0]), kwargs)
 
     @apimanager.validate(returncode=204, min_args=1, max_args=1)
-    def delete(self, service_name):
+    def delete(self, args):
         """Delete a service.
         Args:
-            [0]: the service name
+            [0]: the service UUID
         Example URLs:
-            DELETE /api/v1/servicemanager/service1
+            DELETE /api/v1/servicemanager/ad13ffb8-a7ed-423d-b758-afdf9c4d5369
         """
 
-        self.service.delete_service(service_name)
+        self.service.delete_service(uuid.UUID(args[0]))
